@@ -51,3 +51,8 @@ If there is a conflict:
   - What you will change (short plan)
   - The patch/diff (or file-level edits)
   - How to verify (commands/steps)
+
+## Enforcement reminder
+- In PuerTS TypeScript code, do not use `as any` or broad `try/catch` as shortcuts.
+- Prefer explicit checks and fail-fast behavior.
+

@@ -46,6 +46,36 @@
 - 涉及 Pak/IoStore/挂载时：
   - 明确：资源是否已经被 Cook、是否可被运行时加载、是否需要重启（通常不需要，但取决于系统设计）
 
+## PuerTS binding safety (critical)
+
+在 PuerTS 中调用 UE 的 BlueprintFunctionLibrary / UFunction 时，`out` 参数容器的元素类型必须与 UE 侧签名严格一致。
+否则会发生内存解释错误，可能导致 PuerTS 侧崩溃。
+
+### Hard rule: Out TArray element type must match exactly
+- 如果 UE 签名是 `TArray<FName>&`，TS 侧必须使用 `UE.BuiltinName` 创建容器：
+  - ✅ `UE.NewArray(UE.BuiltinName)`
+  - ❌ `UE.NewArray(UE.BuiltinString)`（会把内存按 FString 解释，导致崩溃）
+
+### Example
+错误示例（可能崩溃）：
+```ts
+const outRowNames = UE.NewArray(UE.BuiltinString);
+UE.DataTableFunctionLibrary.GetDataTableRowNames(table, $ref(outRowNames));
+```
+
+正确示例：
+```ts
+const outRowNames = UE.NewArray(UE.BuiltinName);
+UE.DataTableFunctionLibrary.GetDataTableRowNames(table, $ref(outRowNames));
+```
+### Notes
+
+- 对所有 out / ref / TArray<...> / TSet<...> / TMap<...> 参数同样适用：
+
+  - 必须按 UE 侧真实类型选择对应的 Builtin* 容器类型
+
+- 遇到不确定类型时，优先回到 C++/蓝图签名确认，而不是靠试错。
+
 ## Logging & crash safety
 - UE 日志优先使用项目既有的 category：
   - `UE_LOG(LogXXX, ...)`
